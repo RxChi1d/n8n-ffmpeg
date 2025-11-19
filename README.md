@@ -46,6 +46,11 @@ Lightweight GitHub Actions workflow that periodically checks for new versions of
          - appdata/n8n/data:/home/node/.n8n
    ```
 
+## 📖 Documentation
+
+For a detailed introduction and implementation guide (in Traditional Chinese), please visit:
+- [n8n-ffmpeg：整合 FFmpeg 的 n8n Docker 映像檔與自動化構建實作](https://inktrace.rxchi1d.me/posts/container-platform/n8n-ffmpeg/)
+
 ## CI Workflow
 
 - **build-and-push.yml**:
