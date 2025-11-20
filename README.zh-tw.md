@@ -46,6 +46,11 @@
          - appdata/n8n/data:/home/node/.n8n
    ```
 
+## 📖 相關文章
+
+想了解更詳細的專案介紹與實作說明，請參考：
+- [n8n-ffmpeg：整合 FFmpeg 的 n8n Docker 映像檔與自動化構建實作](https://inktrace.rxchi1d.me/posts/container-platform/n8n-ffmpeg/)
+
 ## CI 工作流程
 
 - **build-and-push.yml**：
