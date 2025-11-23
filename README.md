@@ -48,8 +48,8 @@ Lightweight GitHub Actions workflow that periodically checks for new versions of
 
 ## 📖 Documentation
 
-For a detailed introduction and implementation guide (in Traditional Chinese), please visit:
-- [n8n-ffmpeg：整合 FFmpeg 的 n8n Docker 映像檔與自動化構建實作](https://inktrace.rxchi1d.me/posts/container-platform/n8n-ffmpeg/)
+For a detailed introduction and implementation guide, please visit:
+- [n8n-ffmpeg: n8n Docker Image with FFmpeg Integration and Automated Builds](https://inktrace.rxchi1d.me/en/posts/container-platform/n8n-ffmpeg/)
 
 ## CI Workflow
 
