@@ -15,6 +15,17 @@ Lightweight GitHub Actions workflow that periodically checks for new versions of
 - **FFmpeg Integration**: Pre-installs FFmpeg in the base official n8n image, eliminating the need for manual installation.
 - **Automatic Push**: Automatically pushes all tags (including version number and `latest`) to the specified Docker Hub Repository.
 
+## Dockerfile variants
+
+Since [n8n@2.1.0](https://github.com/n8n-io/n8n/releases/tag/n8n%402.1.0) ([PR #23149](https://github.com/n8n-io/n8n/pull/23149)), n8n-base removes apk-tools in the final stage. The official n8n image can no longer run `apk add` directly, so this project provides two variants.
+
+- **Default (with apk-tools)**: `Dockerfile`, restores apk-tools via multi-stage and then installs FFmpeg.  
+- **Clean (no apk-tools)**: `Dockerfile.no-apk-tools`, final image has no apk/apk-tools and only adds ffmpeg files.  
+
+Details:  
+- [With apk-tools](docs/dockerfile-variants.md#with-apk-tools)  
+- [No apk-tools](docs/dockerfile-variants.md#no-apk-tools)  
+
 ## Usage
 
 1. **Pull the Image**

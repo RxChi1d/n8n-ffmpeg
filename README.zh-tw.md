@@ -15,6 +15,17 @@
 - **FFmpeg 整合**：在官方 n8n 基礎映像中預裝 FFmpeg，免去手動安裝步驟。  
 - **自動推送**：將所有標籤（含版本號及 `latest`）自動推送到指定的 Docker Hub Repository。  
 
+## Dockerfile 版本
+
+自 [n8n@2.1.0](https://github.com/n8n-io/n8n/releases/tag/n8n%402.1.0) 起，n8n-base 移除了 apk-tools ，導致官方 n8n 映像中無法直接使用 `apk add`。因此需要做調整。
+
+- **預設版本（含 apk-tools）**：`Dockerfile`，透過 multi-stage 恢復 apk-tools，再安裝 FFmpeg。  
+- **乾淨版本（不含 apk-tools）**：`Dockerfile.no-apk-tools`，最終映像不含 apk/apk-tools，僅加入 ffmpeg 必要檔案，與官方 n8n 差異最小。  
+
+詳細說明請見：  
+- [含 apk-tools 版本](docs/dockerfile-variants.zh-tw.md#with-apk-tools)  
+- [不含 apk-tools 版本](docs/dockerfile-variants.zh-tw.md#no-apk-tools)  
+
 ## 使用說明
 
 1. **拉取映像**
