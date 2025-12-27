@@ -51,11 +51,18 @@
    services:
      n8n-ffmpeg:
        image: rxchi1d/n8n-ffmpeg:latest
-       ports:
-         - "5678:5678"
-       volumes:
-         - appdata/n8n/data:/home/node/.n8n
+       environment:
+         # 必要設定：啟用 Execute Command 節點以使用 ffmpeg
+         - NODES_EXCLUDE=[]
+
+        <!-- 以下省略 -->
    ```
+   以上為簡化的配置示例。完整的生產環境配置（包含資料庫、反向代理等），請參考 [n8n 官方 Docker Compose 範例](https://docs.n8n.io/hosting/installation/server-setups/docker-compose/#6-create-docker-compose-file)。
+
+   > [!IMPORTANT]
+   > 從 n8n@2.0.0 開始，基於安全性考量，`Execute Command` 節點預設被停用。若要在 Workflow 中使用 `ffmpeg` 等指令，**必須**在環境變數中添加 `NODES_EXCLUDE=[]` 來解除所有節點的停用狀態。
+   > 詳細資訊請參閱 [n8n 官方文件](https://docs.n8n.io/hosting/configuration/environment-variables/nodes/)。
+
 
 ## 📖 相關文章
 
