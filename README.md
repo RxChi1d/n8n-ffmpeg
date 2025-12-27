@@ -51,11 +51,17 @@ Details:
    services:
      n8n-ffmpeg:
        image: rxchi1d/n8n-ffmpeg:latest
-       ports:
-         - "5678:5678"
-       volumes:
-         - appdata/n8n/data:/home/node/.n8n
+       environment:
+         # Required: Enable Execute Command node to use ffmpeg
+         - NODES_EXCLUDE=[]
+
+        <!-- Other configurations omitted -->
    ```
+   The above is a simplified configuration example. For complete production environment configuration (including database, reverse proxy, etc.), please refer to the [official n8n Docker Compose example](https://docs.n8n.io/hosting/installation/server-setups/docker-compose/#6-create-docker-compose-file).
+
+   > [!IMPORTANT]
+   > Starting from n8n@2.0.0, the `Execute Command` node is disabled by default for security reasons. To use `ffmpeg` and other commands in your workflow, you **must** add `NODES_EXCLUDE=[]` to the environment variables to enable all nodes.
+   > For more details, please refer to the [official n8n documentation](https://docs.n8n.io/hosting/configuration/environment-variables/nodes/).
 
 ## 📖 Documentation
 
