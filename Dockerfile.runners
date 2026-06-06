@@ -1,4 +1,7 @@
 ARG N8N_VERSION=latest
+# Pins only the donor stage that provides apk.static and signing keys (both
+# work across newer Alpine releases); the runtime package repositories are
+# detected from the base image instead.
 ARG ALPINE_VERSION=3.22
 
 FROM alpine:${ALPINE_VERSION} AS apktools
@@ -10,12 +13,15 @@ USER root
 
 # Reinstall apk-tools since the runners image removes it. The Alpine version
 # is detected from the base image at build time, because python:3.13-alpine
-# (the runners runtime base) does not pin its Alpine release.
+# (the runners runtime base) does not pin its Alpine release. Detection uses
+# /etc/os-release, which exists on both regular Alpine and hardened bases
+# that drop /etc/alpine-release.
 COPY --from=apktools /sbin/apk.static /sbin/apk.static
 COPY --from=apktools /etc/apk/keys /tmp/apk-keys
-RUN RUNTIME_ALPINE_VERSION=$(cut -d. -f1,2 /etc/alpine-release) \
+RUN RUNTIME_ALPINE_VERSION=$(. /etc/os-release && printf '%s' "$VERSION_ID" | cut -d. -f1,2) \
+    && [ -n "$RUNTIME_ALPINE_VERSION" ] \
     && mkdir -p /etc/apk /etc/apk/keys \
-    && cp -n /tmp/apk-keys/* /etc/apk/keys/ || true \
+    && { cp -n /tmp/apk-keys/* /etc/apk/keys/ || true; } \
     && printf 'https://dl-cdn.alpinelinux.org/alpine/v%s/main\nhttps://dl-cdn.alpinelinux.org/alpine/v%s/community\n' "$RUNTIME_ALPINE_VERSION" "$RUNTIME_ALPINE_VERSION" > /etc/apk/repositories \
     && /sbin/apk.static -X "https://dl-cdn.alpinelinux.org/alpine/v${RUNTIME_ALPINE_VERSION}/main" -U add apk-tools \
     && rm -f /sbin/apk.static \

@@ -29,6 +29,7 @@ Keep the official n8n base image and restore apk-tools so ffmpeg can be installe
 - Use a multi-stage build to copy `apk.static` and keys from Alpine, then install apk-tools in the final image.
 - Avoid downloading `apk.static` directly to skip HTML parsing and avoid depending on tools like `grep` and `wget`.
 - Merge keys with `cp -n` to avoid overwriting existing files.
+- The Alpine version for the package repositories is detected from the base image's `/etc/os-release` at build time, so it always matches the runtime base even when upstream bumps its Alpine release. `/etc/os-release` is used because the n8n base (Docker Hardened Images) ships no `/etc/alpine-release`.
 
 ### Usage
 
@@ -80,7 +81,7 @@ The same two approaches apply to the official [`n8nio/runners`](https://hub.dock
 
 ### Differences from the main-image variants
 
-- **Build-time Alpine version detection (default variant)**: the runners runtime base is `python:3.13-alpine`, which does not pin its Alpine release, so hardcoding `ALPINE_VERSION` would silently break when the base image moves to a newer Alpine. The default variant instead reads `/etc/alpine-release` from the base image at build time to select the matching package repositories.
+- **Alpine version detection (default variant)**: same `/etc/os-release` detection as the main `Dockerfile`. It matters even more here because the runners runtime base (`python:3.13-alpine`) does not pin its Alpine release, so a hardcoded `ALPINE_VERSION` would silently break when the base image moves to a newer Alpine.
 - **Code Node allowlist passthrough (both variants)**: the stock runners image hardcodes `NODE_FUNCTION_ALLOW_BUILTIN`, `NODE_FUNCTION_ALLOW_EXTERNAL`, `N8N_RUNNERS_STDLIB_ALLOW` and `N8N_RUNNERS_EXTERNAL_ALLOW` in the `env-overrides` section of `/etc/n8n-task-runners.json`, which makes the launcher silently discard values set on the container. Both variants patch the config at build time to move these keys to the launcher's `allowed-env` passthrough list, and set image-level `ENV` defaults identical to the stock values. Behavior is unchanged unless you explicitly override them (e.g. `NODE_FUNCTION_ALLOW_BUILTIN=crypto,child_process` to let the JavaScript Code Node spawn ffmpeg).
 
 ### Usage
