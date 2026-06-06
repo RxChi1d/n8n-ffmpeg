@@ -1,4 +1,7 @@
 ARG N8N_VERSION=latest
+# Pins only the donor stage that provides apk.static and signing keys (both
+# work across newer Alpine releases); the runtime package repositories are
+# detected from the base image instead.
 ARG ALPINE_VERSION=3.22
 
 FROM alpine:${ALPINE_VERSION} AS apktools
