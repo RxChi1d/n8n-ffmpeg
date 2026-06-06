@@ -7,6 +7,7 @@ n8n-base removes apk-tools, so the official n8n image cannot use `apk add` direc
 - [Why the original `apk add` approach fails](#apk-add-failure)
 - [With apk-tools (default)](#with-apk-tools)
 - [No apk-tools (clean install)](#no-apk-tools)
+- [Task runners image variants](#runners)
 
 <a id="apk-add-failure"></a>
 ## Why the original `apk add` approach fails
@@ -68,3 +69,23 @@ docker build -f Dockerfile.no-apk-tools -t n8n-ffmpeg:clean --build-arg N8N_VERS
 
 - You only need ffmpeg and do not need to install other packages at runtime.
 - You want the runtime environment to stay as close as possible to the official image.
+
+<a id="runners"></a>
+## Task runners image variants
+
+The same two approaches apply to the official [`n8nio/runners`](https://hub.docker.com/r/n8nio/runners) image (the sidecar for task runners in `external` mode), which also removes apk-tools in its final stage:
+
+- **Default (with apk-tools)**: [`Dockerfile.runners`](../Dockerfile.runners), published as `rxchi1d/n8n-runners-ffmpeg`.
+- **Clean (no apk-tools)**: [`Dockerfile.runners.no-apk-tools`](../Dockerfile.runners.no-apk-tools), self-build only.
+
+### Differences from the main-image variants
+
+- **Build-time Alpine version detection (default variant)**: the runners runtime base is `python:3.13-alpine`, which does not pin its Alpine release, so hardcoding `ALPINE_VERSION` would silently break when the base image moves to a newer Alpine. The default variant instead reads `/etc/alpine-release` from the base image at build time to select the matching package repositories.
+- **Code Node allowlist passthrough (both variants)**: the stock runners image hardcodes `NODE_FUNCTION_ALLOW_BUILTIN`, `NODE_FUNCTION_ALLOW_EXTERNAL`, `N8N_RUNNERS_STDLIB_ALLOW` and `N8N_RUNNERS_EXTERNAL_ALLOW` in the `env-overrides` section of `/etc/n8n-task-runners.json`, which makes the launcher silently discard values set on the container. Both variants patch the config at build time to move these keys to the launcher's `allowed-env` passthrough list, and set image-level `ENV` defaults identical to the stock values. Behavior is unchanged unless you explicitly override them (e.g. `NODE_FUNCTION_ALLOW_BUILTIN=crypto,child_process` to let the JavaScript Code Node spawn ffmpeg).
+
+### Usage
+
+```bash
+docker build -f Dockerfile.runners -t n8n-runners-ffmpeg:local --build-arg N8N_VERSION=2.25.5 .
+docker build -f Dockerfile.runners.no-apk-tools -t n8n-runners-ffmpeg:clean --build-arg N8N_VERSION=2.25.5 .
+```
