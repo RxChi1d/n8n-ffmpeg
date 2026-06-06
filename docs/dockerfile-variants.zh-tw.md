@@ -7,6 +7,7 @@ n8n-base 已移除 apk-tools，因此官方 n8n 映像中無法直接使用 `apk
 - [為什麼原本的 `apk add` 方式失效](#apk-add-failure)
 - [含 apk-tools（預設）](#with-apk-tools)
 - [不含 apk-tools（乾淨安裝）](#no-apk-tools)
+- [Task runners 映像版本](#runners)
 
 <a id="apk-add-failure"></a>
 ## 為什麼原本的 `apk add` 方式失效
@@ -67,3 +68,23 @@ docker build -f Dockerfile.no-apk-tools -t n8n-ffmpeg:clean --build-arg N8N_VERS
 
 - 只需要 ffmpeg，不需要在執行期安裝其他套件。
 - 希望執行環境更接近原始官方映像。
+
+<a id="runners"></a>
+## Task runners 映像版本
+
+相同的兩種做法也適用於官方 [`n8nio/runners`](https://hub.docker.com/r/n8nio/runners) 映像（`external` 模式 task runners 的 sidecar），該映像同樣在 final stage 移除了 apk-tools：
+
+- **預設版本（含 apk-tools）**：[`Dockerfile.runners`](../Dockerfile.runners)，發布為 `rxchi1d/n8n-runners-ffmpeg`。
+- **乾淨版本（不含 apk-tools）**：[`Dockerfile.runners.no-apk-tools`](../Dockerfile.runners.no-apk-tools)，僅供自行建置。
+
+### 與主映像版本的差異
+
+- **建置時動態偵測 Alpine 版本（預設版本）**：runners 的 runtime base 是 `python:3.13-alpine`，其 Alpine 版本不固定，若寫死 `ALPINE_VERSION`，當 base 映像升級 Alpine 時會靜默產生套件來源不匹配的問題。因此預設版本改為在建置時讀取 base 映像內的 `/etc/alpine-release`，動態選擇對應的套件來源。
+- **Code Node 允許清單可設定化（兩種版本皆有）**：官方 runners 映像將 `NODE_FUNCTION_ALLOW_BUILTIN`、`NODE_FUNCTION_ALLOW_EXTERNAL`、`N8N_RUNNERS_STDLIB_ALLOW`、`N8N_RUNNERS_EXTERNAL_ALLOW` 硬編碼在 `/etc/n8n-task-runners.json` 的 `env-overrides` 中，導致 launcher 靜默丟棄容器上設定的值。兩種版本都會在建置時修補該配置，將這些變數移至 launcher 的 `allowed-env` 白名單，並以映像層級的 `ENV` 設定與官方相同的預設值。未明確覆寫時行為與官方完全一致（例如設定 `NODE_FUNCTION_ALLOW_BUILTIN=crypto,child_process` 即可讓 JavaScript Code Node 呼叫 ffmpeg）。
+
+### 使用方式
+
+```bash
+docker build -f Dockerfile.runners -t n8n-runners-ffmpeg:local --build-arg N8N_VERSION=2.25.5 .
+docker build -f Dockerfile.runners.no-apk-tools -t n8n-runners-ffmpeg:clean --build-arg N8N_VERSION=2.25.5 .
+```

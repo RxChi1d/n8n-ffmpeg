@@ -1,0 +1,64 @@
+ARG N8N_VERSION=latest
+ARG ALPINE_VERSION=3.22
+
+FROM alpine:${ALPINE_VERSION} AS apktools
+RUN apk add --no-cache apk-tools-static
+
+FROM n8nio/runners:${N8N_VERSION}
+
+USER root
+
+# Reinstall apk-tools since the runners image removes it. The Alpine version
+# is detected from the base image at build time, because python:3.13-alpine
+# (the runners runtime base) does not pin its Alpine release.
+COPY --from=apktools /sbin/apk.static /sbin/apk.static
+COPY --from=apktools /etc/apk/keys /tmp/apk-keys
+RUN RUNTIME_ALPINE_VERSION=$(cut -d. -f1,2 /etc/alpine-release) \
+    && mkdir -p /etc/apk /etc/apk/keys \
+    && cp -n /tmp/apk-keys/* /etc/apk/keys/ || true \
+    && printf 'https://dl-cdn.alpinelinux.org/alpine/v%s/main\nhttps://dl-cdn.alpinelinux.org/alpine/v%s/community\n' "$RUNTIME_ALPINE_VERSION" "$RUNTIME_ALPINE_VERSION" > /etc/apk/repositories \
+    && /sbin/apk.static -X "https://dl-cdn.alpinelinux.org/alpine/v${RUNTIME_ALPINE_VERSION}/main" -U add apk-tools \
+    && rm -f /sbin/apk.static \
+    && rm -rf /tmp/apk-keys
+
+RUN apk add --no-cache ffmpeg ffmpeg-dev \
+    && rm -rf /var/cache/apk/*
+
+# Make the Code Node module allowlists configurable via container env vars:
+# the stock config hardcodes them in env-overrides (which silently discards
+# user-provided values), so move them to allowed-env (passthrough) instead.
+RUN python3 - <<'EOF'
+import json
+
+PATH = '/etc/n8n-task-runners.json'
+MOVE = {
+    'javascript': ['NODE_FUNCTION_ALLOW_BUILTIN', 'NODE_FUNCTION_ALLOW_EXTERNAL'],
+    'python': ['N8N_RUNNERS_STDLIB_ALLOW', 'N8N_RUNNERS_EXTERNAL_ALLOW'],
+}
+
+with open(PATH) as f:
+    config = json.load(f)
+
+for runner in config['task-runners']:
+    for key in MOVE.get(runner['runner-type'], []):
+        if key not in runner.setdefault('allowed-env', []):
+            runner['allowed-env'].append(key)
+        runner.get('env-overrides', {}).pop(key, None)
+
+with open(PATH, 'w') as f:
+    json.dump(config, f, indent=2)
+EOF
+
+# Defaults match the stock image; override at runtime to allowlist more
+# modules, e.g. NODE_FUNCTION_ALLOW_BUILTIN=crypto,child_process for ffmpeg.
+ENV NODE_FUNCTION_ALLOW_BUILTIN=crypto \
+    NODE_FUNCTION_ALLOW_EXTERNAL=moment \
+    N8N_RUNNERS_STDLIB_ALLOW= \
+    N8N_RUNNERS_EXTERNAL_ALLOW=
+
+# Switch back to the default user.
+USER runner
+
+# Verify ffmpeg.
+RUN ffmpeg -version \
+    && ffprobe -version
