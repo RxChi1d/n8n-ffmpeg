@@ -4,7 +4,8 @@
 
 [![Build Status](https://github.com/rxchi1d/n8n-ffmpeg/actions/workflows/build-and-push.yml/badge.svg)](https://github.com/rxchi1d/n8n-ffmpeg/actions)
 [![Check Updates Status](https://github.com/rxchi1d/n8n-ffmpeg/actions/workflows/check-updates.yml/badge.svg)](https://github.com/rxchi1d/n8n-ffmpeg/actions/workflows/check-updates.yml)
-[![Docker Pulls](https://img.shields.io/docker/pulls/rxchi1d/n8n-ffmpeg)](https://hub.docker.com/r/rxchi1d/n8n-ffmpeg)
+[![Docker Pulls](https://img.shields.io/docker/pulls/rxchi1d/n8n-ffmpeg?label=n8n-ffmpeg%20pulls)](https://hub.docker.com/r/rxchi1d/n8n-ffmpeg)
+[![Docker Pulls (runners)](https://img.shields.io/docker/pulls/rxchi1d/n8n-runners-ffmpeg?label=n8n-runners-ffmpeg%20pulls)](https://hub.docker.com/r/rxchi1d/n8n-runners-ffmpeg)
 
 Lightweight GitHub Actions workflow that periodically checks for new versions of the official n8n image, automatically builds and pushes multi-platform Docker images integrated with FFmpeg.
 
