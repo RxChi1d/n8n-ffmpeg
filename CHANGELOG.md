@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- Updated GitHub Actions to Node 24-ready majors: `actions/checkout` v4→v6, `docker/setup-buildx-action` v3→v4, `docker/login-action` v3→v4, `docker/build-push-action` v5→v7 (GitHub forces Node 24 for actions from 2026-06-16).
+
 ## [1.1.0] - 2026-06-06
 
 ### Added
