@@ -1,0 +1,62 @@
+ARG N8N_VERSION=latest
+ARG ALPINE_VERSION=3.22
+
+FROM alpine:${ALPINE_VERSION} AS ffmpeg
+RUN apk add --no-cache ffmpeg \
+    && mkdir -p /out/bin /out/lib \
+    && cp /usr/bin/ffmpeg /usr/bin/ffprobe /out/bin/ \
+    && find /lib /usr/lib -type f -name '*.so*' -exec cp -a {} /out/lib/ \; \
+    && find /lib /usr/lib -type l -name '*.so*' -exec cp -a {} /out/lib/ \;
+
+FROM n8nio/runners:${N8N_VERSION}
+
+USER root
+
+# Copy ffmpeg into an isolated path to avoid overwriting system files.
+COPY --from=ffmpeg /out/bin/ /opt/ffmpeg/bin/
+COPY --from=ffmpeg /out/lib/ /opt/ffmpeg/lib/
+
+# Wrapper keeps LD_LIBRARY_PATH scoped to ffmpeg only.
+RUN printf '#!/bin/sh\nLD_LIBRARY_PATH=/opt/ffmpeg/lib exec /opt/ffmpeg/bin/ffmpeg "$@"\n' > /usr/local/bin/ffmpeg \
+    && chmod +x /usr/local/bin/ffmpeg \
+    && printf '#!/bin/sh\nLD_LIBRARY_PATH=/opt/ffmpeg/lib exec /opt/ffmpeg/bin/ffprobe "$@"\n' > /usr/local/bin/ffprobe \
+    && chmod +x /usr/local/bin/ffprobe
+
+# Make the Code Node module allowlists configurable via container env vars:
+# the stock config hardcodes them in env-overrides (which silently discards
+# user-provided values), so move them to allowed-env (passthrough) instead.
+RUN python3 - <<'EOF'
+import json
+
+PATH = '/etc/n8n-task-runners.json'
+MOVE = {
+    'javascript': ['NODE_FUNCTION_ALLOW_BUILTIN', 'NODE_FUNCTION_ALLOW_EXTERNAL'],
+    'python': ['N8N_RUNNERS_STDLIB_ALLOW', 'N8N_RUNNERS_EXTERNAL_ALLOW'],
+}
+
+with open(PATH) as f:
+    config = json.load(f)
+
+for runner in config['task-runners']:
+    for key in MOVE.get(runner['runner-type'], []):
+        if key not in runner.setdefault('allowed-env', []):
+            runner['allowed-env'].append(key)
+        runner.get('env-overrides', {}).pop(key, None)
+
+with open(PATH, 'w') as f:
+    json.dump(config, f, indent=2)
+EOF
+
+# Defaults match the stock image; override at runtime to allowlist more
+# modules, e.g. NODE_FUNCTION_ALLOW_BUILTIN=crypto,child_process for ffmpeg.
+ENV NODE_FUNCTION_ALLOW_BUILTIN=crypto \
+    NODE_FUNCTION_ALLOW_EXTERNAL=moment \
+    N8N_RUNNERS_STDLIB_ALLOW= \
+    N8N_RUNNERS_EXTERNAL_ALLOW=
+
+# Switch back to the default user.
+USER runner
+
+# Verify ffmpeg.
+RUN ffmpeg -version \
+    && ffprobe -version
