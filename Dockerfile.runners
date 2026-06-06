@@ -13,15 +13,15 @@ USER root
 # (the runners runtime base) does not pin its Alpine release.
 COPY --from=apktools /sbin/apk.static /sbin/apk.static
 COPY --from=apktools /etc/apk/keys /tmp/apk-keys
-RUN ALPINE_VERSION=$(cut -d. -f1,2 /etc/alpine-release) \
+RUN RUNTIME_ALPINE_VERSION=$(cut -d. -f1,2 /etc/alpine-release) \
     && mkdir -p /etc/apk /etc/apk/keys \
     && cp -n /tmp/apk-keys/* /etc/apk/keys/ || true \
-    && printf 'https://dl-cdn.alpinelinux.org/alpine/v%s/main\nhttps://dl-cdn.alpinelinux.org/alpine/v%s/community\n' "$ALPINE_VERSION" "$ALPINE_VERSION" > /etc/apk/repositories \
-    && /sbin/apk.static -X "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/main" -U add apk-tools \
+    && printf 'https://dl-cdn.alpinelinux.org/alpine/v%s/main\nhttps://dl-cdn.alpinelinux.org/alpine/v%s/community\n' "$RUNTIME_ALPINE_VERSION" "$RUNTIME_ALPINE_VERSION" > /etc/apk/repositories \
+    && /sbin/apk.static -X "https://dl-cdn.alpinelinux.org/alpine/v${RUNTIME_ALPINE_VERSION}/main" -U add apk-tools \
     && rm -f /sbin/apk.static \
     && rm -rf /tmp/apk-keys
 
-RUN apk add --no-cache ffmpeg \
+RUN apk add --no-cache ffmpeg ffmpeg-dev \
     && rm -rf /var/cache/apk/*
 
 # Make the Code Node module allowlists configurable via container env vars:
