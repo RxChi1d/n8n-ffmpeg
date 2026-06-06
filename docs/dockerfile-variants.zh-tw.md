@@ -26,8 +26,9 @@ n8n-base 已移除 apk-tools，因此官方 n8n 映像中無法直接使用 `apk
 ### 設計重點
 
 - 透過 multi-stage 從 Alpine 映像取得 `apk.static` 與 keys，再在最終映像中安裝 apk-tools。
-- 不直接下載 `apk.static`：避免解析網頁或動態抓版本，也避免依賴 `grep`、`wget` 等工具，流程更可預期，也更容易固定 Alpine 版本來源。
+- 不直接下載 `apk.static`：避免解析網頁或動態抓版本，也避免依賴 `grep`、`wget` 等工具，流程更可預期。
 - keys 以 `cp -n` 合併到既有路徑，避免覆蓋原有資料。
+- 套件來源的 Alpine 版本在建置時從 base 映像的 `/etc/os-release` 偵測，確保永遠與 runtime base 匹配，即使上游升級 Alpine 也不受影響。使用 `/etc/os-release` 是因為 n8n 的 base（Docker Hardened Images）不含 `/etc/alpine-release`。
 
 ### 使用方式
 
@@ -79,7 +80,7 @@ docker build -f Dockerfile.no-apk-tools -t n8n-ffmpeg:clean --build-arg N8N_VERS
 
 ### 與主映像版本的差異
 
-- **建置時動態偵測 Alpine 版本（預設版本）**：runners 的 runtime base 是 `python:3.13-alpine`，其 Alpine 版本不固定，若寫死 `ALPINE_VERSION`，當 base 映像升級 Alpine 時會靜默產生套件來源不匹配的問題。因此預設版本改為在建置時讀取 base 映像內的 `/etc/alpine-release`，動態選擇對應的套件來源。
+- **Alpine 版本動態偵測（預設版本）**：與主 `Dockerfile` 相同的 `/etc/os-release` 偵測機制。對 runners 更為重要，因為其 runtime base（`python:3.13-alpine`）的 Alpine 版本不固定，若寫死 `ALPINE_VERSION`，當 base 映像升級 Alpine 時會靜默產生套件來源不匹配的問題。
 - **Code Node 允許清單可設定化（兩種版本皆有）**：官方 runners 映像將 `NODE_FUNCTION_ALLOW_BUILTIN`、`NODE_FUNCTION_ALLOW_EXTERNAL`、`N8N_RUNNERS_STDLIB_ALLOW`、`N8N_RUNNERS_EXTERNAL_ALLOW` 硬編碼在 `/etc/n8n-task-runners.json` 的 `env-overrides` 中，導致 launcher 靜默丟棄容器上設定的值。兩種版本都會在建置時修補該配置，將這些變數移至 launcher 的 `allowed-env` 白名單，並以映像層級的 `ENV` 設定與官方相同的預設值。未明確覆寫時行為與官方完全一致（例如設定 `NODE_FUNCTION_ALLOW_BUILTIN=crypto,child_process` 即可讓 JavaScript Code Node 呼叫 ffmpeg）。
 
 ### 使用方式

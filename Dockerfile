@@ -6,17 +6,21 @@ RUN apk add --no-cache apk-tools-static
 
 FROM n8nio/n8n:${N8N_VERSION}
 
-ARG ALPINE_VERSION
-
 USER root
 
-# Reinstall apk-tools since n8n removes it in the base image.
+# Reinstall apk-tools since n8n removes it in the base image. The Alpine
+# version is detected from the base image at build time so the package
+# repositories always match the runtime base, even when upstream bumps
+# its Alpine release. Detection uses /etc/os-release because the n8n base
+# (Docker Hardened Images) ships no /etc/alpine-release.
 COPY --from=apktools /sbin/apk.static /sbin/apk.static
 COPY --from=apktools /etc/apk/keys /tmp/apk-keys
-RUN mkdir -p /etc/apk /etc/apk/keys \
-    && cp -n /tmp/apk-keys/* /etc/apk/keys/ || true \
-    && printf 'https://dl-cdn.alpinelinux.org/alpine/v%s/main\nhttps://dl-cdn.alpinelinux.org/alpine/v%s/community\n' "$ALPINE_VERSION" "$ALPINE_VERSION" > /etc/apk/repositories \
-    && /sbin/apk.static -X "https://dl-cdn.alpinelinux.org/alpine/v${ALPINE_VERSION}/main" -U add apk-tools \
+RUN RUNTIME_ALPINE_VERSION=$(. /etc/os-release && printf '%s' "$VERSION_ID" | cut -d. -f1,2) \
+    && [ -n "$RUNTIME_ALPINE_VERSION" ] \
+    && mkdir -p /etc/apk /etc/apk/keys \
+    && { cp -n /tmp/apk-keys/* /etc/apk/keys/ || true; } \
+    && printf 'https://dl-cdn.alpinelinux.org/alpine/v%s/main\nhttps://dl-cdn.alpinelinux.org/alpine/v%s/community\n' "$RUNTIME_ALPINE_VERSION" "$RUNTIME_ALPINE_VERSION" > /etc/apk/repositories \
+    && /sbin/apk.static -X "https://dl-cdn.alpinelinux.org/alpine/v${RUNTIME_ALPINE_VERSION}/main" -U add apk-tools \
     && rm -f /sbin/apk.static \
     && rm -rf /tmp/apk-keys
 
