@@ -14,9 +14,6 @@ jobs:
       should-build-runners: ${{ steps.version-check.outputs.should-build-runners }}
 
     steps:
-      - name: Checkout
-        uses: actions/checkout@v6
-
       - name: Check n8n latest version
         id: version-check
         run: |
