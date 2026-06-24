@@ -21,7 +21,7 @@
 
 自 [n8n@2.1.0](https://github.com/n8n-io/n8n/releases/tag/n8n%402.1.0) 起，n8n-base 移除了 apk-tools ，導致官方 n8n 映像中無法直接使用 `apk add`。因此需要做調整。
 
-- **預設版本（含 apk-tools）**：`Dockerfile`，透過 multi-stage 恢復 apk-tools，再安裝 FFmpeg。  
+- **預設版本（含 apk-tools）**：`Dockerfile`，透過 multi-stage 提供靜態 `apk`，用它安裝 FFmpeg，並在執行期保留可用的 `apk`。  
 - **乾淨版本（不含 apk-tools）**：`Dockerfile.no-apk-tools`，最終映像不含 apk/apk-tools，僅加入 ffmpeg 必要檔案，與官方 n8n 差異最小。  
 
 Task runners 映像也提供相同的兩種版本：`Dockerfile.runners`（預設，自動發布）與 `Dockerfile.runners.no-apk-tools`（乾淨版本，自行建置）。
