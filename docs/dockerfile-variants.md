@@ -21,15 +21,16 @@ Reference: n8n-base Dockerfile (release: [n8n@2.1.0](https://github.com/n8n-io/n
 
 ### Goal
 
-Keep the official n8n base image and restore apk-tools so ffmpeg can be installed normally.
+Keep the official n8n base image, give it a working `apk` so ffmpeg can be installed, and leave that `apk` available at runtime for users who need to install other packages.
 
 ### Design notes
 
 - n8n-base removes apk-tools, so `apk add` fails.
-- Use a multi-stage build to copy `apk.static` and keys from Alpine, then install apk-tools in the final image.
+- Use a multi-stage build to copy `apk.static` and keys from Alpine, install ffmpeg with `apk.static`, then keep that static binary as `/sbin/apk` in the final image.
 - Avoid downloading `apk.static` directly to skip HTML parsing and avoid depending on tools like `grep` and `wget`.
 - Merge keys with `cp -n` to avoid overwriting existing files.
 - The Alpine version for the package repositories is detected from the base image's `/etc/os-release` at build time, so it always matches the runtime base even when upstream bumps its Alpine release. `/etc/os-release` is used because the n8n base (Docker Hardened Images) ships no `/etc/alpine-release`.
+- **Do not reinstall the `apk-tools` package from the CDN.** The n8n base is a Docker Hardened Image whose `/etc/apk/world` pins every package to an exact content hash, and Alpine's `main` repo only keeps the latest point release. Reinstalling `apk-tools` always pulls the newest version, so once Alpine bumps it (e.g. `2.14.9` → `2.14.10`) the freshly pulled `libapk2` no longer matches the pinned hash and the build fails with `breaks: world[libapk2><...>]`. Keeping the donor's static `apk` instead never touches the pinned packages, so the build is immune to upstream point releases.
 
 ### Usage
 

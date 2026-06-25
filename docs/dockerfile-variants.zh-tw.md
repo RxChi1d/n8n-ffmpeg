@@ -21,14 +21,15 @@ n8n-base 已移除 apk-tools，因此官方 n8n 映像中無法直接使用 `apk
 
 ### 目的
 
-在保留官方 n8n 映像為基礎的前提下，恢復 apk-tools，讓 ffmpeg 可以正常安裝。
+在保留官方 n8n 映像為基礎的前提下，提供一個可用的 `apk`，讓 ffmpeg 可以正常安裝，並在執行期保留該 `apk` 供使用者安裝其他套件。
 
 ### 設計重點
 
-- 透過 multi-stage 從 Alpine 映像取得 `apk.static` 與 keys，再在最終映像中安裝 apk-tools。
+- 透過 multi-stage 從 Alpine 映像取得 `apk.static` 與 keys，用 `apk.static` 安裝 ffmpeg，再把該靜態執行檔保留為最終映像的 `/sbin/apk`。
 - 不直接下載 `apk.static`：避免解析網頁或動態抓版本，也避免依賴 `grep`、`wget` 等工具，流程更可預期。
 - keys 以 `cp -n` 合併到既有路徑，避免覆蓋原有資料。
 - 套件來源的 Alpine 版本在建置時從 base 映像的 `/etc/os-release` 偵測，確保永遠與 runtime base 匹配，即使上游升級 Alpine 也不受影響。使用 `/etc/os-release` 是因為 n8n 的 base（Docker Hardened Images）不含 `/etc/alpine-release`。
+- **不要從 CDN 重裝 `apk-tools` 套件。** n8n base 是 Docker Hardened Image，其 `/etc/apk/world` 把每個套件釘選在精確的 content hash，而 Alpine `main` repo 只保留最新點版。重裝 `apk-tools` 一定會拉到最新版，因此一旦 Alpine 升版（例如 `2.14.9` → `2.14.10`），新拉的 `libapk2` 就不再符合釘選的 hash，建置會以 `breaks: world[libapk2><...>]` 失敗。改為保留 donor 的靜態 `apk` 完全不會動到被釘選的套件，因此不受上游點版更新影響。
 
 ### 使用方式
 

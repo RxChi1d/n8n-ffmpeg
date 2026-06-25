@@ -21,7 +21,7 @@ Lightweight GitHub Actions workflow that periodically checks for new versions of
 
 Since [n8n@2.1.0](https://github.com/n8n-io/n8n/releases/tag/n8n%402.1.0) ([PR #23149](https://github.com/n8n-io/n8n/pull/23149)), n8n-base removes apk-tools in the final stage. The official n8n image can no longer run `apk add` directly, so this project provides two variants.
 
-- **Default (with apk-tools)**: `Dockerfile`, restores apk-tools via multi-stage and then installs FFmpeg.  
+- **Default (with apk-tools)**: `Dockerfile`, provides a static `apk` via multi-stage, installs FFmpeg with it, and keeps `apk` available at runtime.  
 - **Clean (no apk-tools)**: `Dockerfile.no-apk-tools`, final image has no apk/apk-tools and only adds ffmpeg files.  
 
 The same two variants exist for the task runners image: `Dockerfile.runners` (default, published) and `Dockerfile.runners.no-apk-tools` (clean, self-build).
